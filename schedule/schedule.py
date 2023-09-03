@@ -26,7 +26,6 @@ except FileNotFoundError:
 
 
 def get_subject_teacher(string) -> list:
-    # Если указаны 2 преподавателя
     match = re.search(PATTERN_TWO_TEACHERS, string)
     if match:
         subject = match.group(1)
@@ -45,7 +44,7 @@ def get_subject_teacher(string) -> list:
 
 
 def get_shedule(wb) -> dict:
-    schedule = {} # словарь для хранения расписания по группам
+    schedule = {}
     for sheet in wb.worksheets:
         for row in sheet.rows:
             for cell in filter(lambda x: isinstance(x.value, str) and re.match(PATTERN_GROUP, x.value), row):
