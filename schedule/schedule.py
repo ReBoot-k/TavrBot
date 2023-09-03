@@ -74,7 +74,7 @@ def get_schedule(wb) -> dict:
                             merged_range = r
                             break
 
-                    week = datetime.date.today().isocalendar()[1] % 2
+                    week = datetime.date.today().isocalendar().week % 2
                     week = (not merged_range) * week 
 
                     subject_teacher = sheet.cell(row=row_num + week, column=col_num).value 
