@@ -78,7 +78,7 @@ def get_shedule(wb) -> dict:
     return schedule
 
 
-def get_lessons(group, schedule) -> str:
+def convert_schedule_to_string(group, schedule) -> str:
     lessons = schedule.get(group)
     if not lessons:
         return "Error"
@@ -113,5 +113,5 @@ if group not in data:
             pickle.dump(shedule, file)
     data = shedule
 
-print(get_lessons(group, data))
+print(convert_schedule_to_string(group, data))
 
