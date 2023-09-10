@@ -6,7 +6,7 @@ import datetime
 from config import FILENAME_ALL, FILENAME_CORRECTION
 
 
-__version__ = "0.1.0"
+__version__ = "0.1.1"
 
 FILENAME_DATA = "data.pickle"
 
@@ -232,27 +232,29 @@ def convert_schedule_by_criteria_to_string(key, schedule, criterion) -> str:
 
 schedule = {}
 
-def set_schedule(week_is_even=None) -> None:
+def set_schedule(date=None, week_is_even=None) -> None:
     """
     Устанавливает расписание по группам из файлов с данными.
 
     Аргументы:
-        week_is_even (bool): Четность недели. Если не указана, то определяется по текущей дате.
+        date (bool): Дата расписания. Если не указана, то определяется по текущей дате.
+        week_is_even (bool): Четность недели.
 
     Возвращает:
         None: Ничего не возвращает, но изменяет глобальную переменную schedule.
     """
     global schedule 
 
-    if not week_is_even:
-        week_is_even = datetime.date.today().strftime("%d.%m")
+    if not date:
+        date = datetime.date.today().strftime("%d.%m")
     
     try:
         with open(FILENAME_ALL, "rb") as file:
             WORKBOOK1 = openpyxl.load_workbook(file)
         with open(FILENAME_CORRECTION, "rb") as file:
             WORKBOOK2 = openpyxl.load_workbook(file)
-        
+        if week_is_even is None:
+            week_is_even = is_even_week(date)
 
         schedule = get_schedule(WORKBOOK1, week_is_even)
         schedule.update(get_schedule(WORKBOOK2, week_is_even))

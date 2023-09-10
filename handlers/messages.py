@@ -12,13 +12,12 @@ from config import FILENAME_ALL, FILENAME_CORRECTION
 client.labeler.vbml_ignore_case = True
 
 
-COMPILE = re.compile(r".+ и замены на (\d{1,2}.\d{1,2})(.*)")
+COMPILE = re.compile(r".* (\d{1,2}.\d{1,2})(.*)")
 @client.on.message( regex=COMPILE)
 async def getfile(message: Message) -> None:
-    date = COMPILE.match(message.text).group(1)
-    if message.attachments:
-        files = []
     
+    if message.attachments:
+        files = []    
         folder = "data" 
         for file in os.listdir(folder):
             file_path = os.path.join(folder, file)
@@ -38,10 +37,15 @@ async def getfile(message: Message) -> None:
         else:
             shutil.copy(FILENAME_ALL, FILENAME_CORRECTION)
         
-        schedulelesson.set_schedule(date)
+        date = COMPILE.match(message.text).group(1)
+        type_week = COMPILE.match(message.text).group(2)
+        if type_week:
+            type_week = type_week.strip().casefold()
+            schedulelesson.set_schedule(week_is_even=bool(schedulelesson.get_closest_match("числитель", [type_week.casefold()])))
+        else:
+            schedulelesson.set_schedule(date)
+
         
-
-
 
 @client.on.private_message()
 @check_subscription
