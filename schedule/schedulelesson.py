@@ -6,7 +6,7 @@ import datetime
 from config import FILENAME_ALL, FILENAME_CORRECTION
 
 
-__version__ = "0.1.1"
+__version__ = "0.1.2"
 
 FILENAME_DATA = "data.pickle"
 
@@ -174,13 +174,22 @@ def create_schedule_by_criteria(schedule, criterion) -> dict:
                     return None
                 
     schedule_new = {}
-    # Да пусть надежда цветет, что диспетчер беды не несет
-    for key in schedule_by_criteria:
-        closest_key = get_closest_match(key, list(schedule_new.keys()))
-        if closest_key and difflib.SequenceMatcher(None, key, closest_key).ratio() > 0.95 and len(key) != len(closest_key):
-            schedule_new[closest_key].extend(schedule_by_criteria[key])
-        else:
-            schedule_new[key] = schedule_by_criteria[key]
+    if criterion == "teacher":
+        for key in schedule_by_criteria:
+            key_new = key.strip()
+            if not key.endswith('.'):
+                key_new += '.'
+            if key_new == key:
+                    schedule_new[key] = schedule_new.get(key, []) + schedule_by_criteria[key]
+            else:
+                schedule_new[key] = schedule_by_criteria[key]
+    else:
+        for key in schedule_by_criteria:
+            closest_key = get_closest_match(key, list(schedule_new.keys()))
+            if closest_key and difflib.SequenceMatcher(None, key, closest_key).ratio() > 0.95 and len(key) != len(closest_key):
+                schedule_new[closest_key].extend(schedule_by_criteria[key])
+            else:
+                schedule_new[key] = schedule_by_criteria[key]
 
     return schedule_new
 
