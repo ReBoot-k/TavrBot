@@ -1,4 +1,4 @@
 loguru==0.7.0
-requests==2.31.01
+requests==2.31.0
 openpyxl==3.1.22
 vkbottle==4.3.12
