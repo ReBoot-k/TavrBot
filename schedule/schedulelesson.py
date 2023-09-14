@@ -11,11 +11,12 @@ __version__ = "0.1.2"
 FILENAME_DATA = "data.pickle"
 
 PATTERN_GROUP = "^[0-9][А-Я]{1,3}[0-9]+$"
-PATTERN_ONE_TEACHER = r"(.*)\s([А-Я][а-я]+(-[А-Я][а-я]+)?\s+[А-Я][. ]*[А-Я][. ]*)"
-PATTERN_TWO_TEACHERS = r"(.*)\s([А-Я][а-я]+(-[А-Я][а-я]+)?\s+[А-Я][. ]*[А-Я][. ]*)\s+([А-Я][а-я]+(-[А-Я][а-я]+)?\s+[А-Я][. ]*[А-Я][. ]*)"
+PATTERN_ONE_TEACHER = r"(.*)\s([А-ЯЁ][а-яё]+(-[А-ЯЁ][а-яё]+)?\s+[А-ЯЁ][. ]*[А-ЯЁ][. ]*)"
+PATTERN_TWO_TEACHERS = r"(.*)\s([А-ЯЁ][а-яё]+(-[А-ЯЁ][а-яё]+)?\s+[А-ЯЁ][. ]*[А-ЯЁ][. ]*)\s+([А-ЯЁ][а-яё]+(-[А-ЯЁ][а-яё]+)?\s+[А-ЯЁ][. ]*[А-ЯЁ][. ]*)"
 
 
-def is_even_week(date: str) -> None:
+
+def is_even_week(date: str) -> bool:
     """
     Проверяет, приходится ли дата на четную неделю учебного года.
 
@@ -31,17 +32,19 @@ def is_even_week(date: str) -> None:
     year = datetime.datetime.now().year
     date = datetime.datetime(year, month, day)
     first_weekday = datetime.datetime(year, 9, 1)
-    while first_weekday.weekday() > 4:
+    while first_weekday.weekday() >= 5:
         first_weekday += datetime.timedelta(days=1)
-    delta = (date - first_weekday).days
+    week = date.isocalendar().week
+    first_week = first_weekday.isocalendar().week
+    delta = week - first_week
     if delta <= 0:
         return True
     else:
-        week = delta // 7 + 1
-        if week % 2 == 0:
+        if delta % 2 == 0:
             return True
         else:
             return False
+
 
 def get_closest_match(word: str, words: list, cutoff=0.6) -> str:
     """
@@ -126,7 +129,8 @@ def get_schedule(wb, week_is_even) -> dict:
                             classroom = list(filter(lambda x: True if x else False, classroom))[0].split()
                         schedule[group].append({"subject": subject_teacher[0], "teachers": subject_teacher[1], "classrooms": classroom}) 
                     else:
-                        schedule[group].append(None)
+                        schedule[group].append({"subject": "Окно", "teachers": "", "classrooms": "диванчик"})
+                    schedule[group] = schedule[group][:6]
     
     return schedule
 
@@ -174,22 +178,13 @@ def create_schedule_by_criteria(schedule, criterion) -> dict:
                     return None
                 
     schedule_new = {}
-    if criterion == "teacher":
-        for key in schedule_by_criteria:
-            key_new = key.strip()
-            if not key.endswith('.'):
-                key_new += '.'
-            if key_new == key:
-                    schedule_new[key] = schedule_new.get(key, []) + schedule_by_criteria[key]
-            else:
-                schedule_new[key] = schedule_by_criteria[key]
-    else:
-        for key in schedule_by_criteria:
-            closest_key = get_closest_match(key, list(schedule_new.keys()))
-            if closest_key and difflib.SequenceMatcher(None, key, closest_key).ratio() > 0.95 and len(key) != len(closest_key):
-                schedule_new[closest_key].extend(schedule_by_criteria[key])
-            else:
-                schedule_new[key] = schedule_by_criteria[key]
+    
+    for key in schedule_by_criteria:
+        closest_key = get_closest_match(key, list(schedule_new.keys()))
+        if closest_key and difflib.SequenceMatcher(None, key, closest_key).ratio() > 0.95 and len(key) != len(closest_key):
+            schedule_new[closest_key].extend(schedule_by_criteria[key])
+        else:
+            schedule_new[key] = schedule_by_criteria[key]
 
     return schedule_new
 

@@ -11,14 +11,15 @@ def download_file(doc):
     response = requests.get(file_url)
     if response.status_code == 200:
         file_name = doc.title
-        with open(Path("data\\" + file_name), "wb") as file:
+        with open(Path("data/" + file_name), "wb") as file:
             file.write(response.content)
         return file_name
     else:
         return None
 
 def check_subscription(function):
-    async def wrapper(message: Message):
+    async def wrapper(*args, **kwargs):
+        message = args[0]
         is_subscribed = await client.api.groups.is_member(
             group_id=abs(config.GROUP_ID), user_id=message.from_id
         )
@@ -27,7 +28,8 @@ def check_subscription(function):
                 "Подпишитесь на сообщество, чтобы использовать этого бота"
             )
         else:
-            await function(message)
+            await function(*args, **kwargs)
     return wrapper
+
 
 
