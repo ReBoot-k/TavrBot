@@ -11,8 +11,8 @@ __version__ = "0.1.2"
 FILENAME_DATA = "data.pickle"
 
 PATTERN_GROUP = "^[0-9][А-Я]{1,3}[0-9]+$"
-PATTERN_ONE_TEACHER = r"(.*)\s([А-ЯЁ][а-яё]+(-[А-ЯЁ][а-яё]+)?\s+[А-ЯЁ][. ]*[А-ЯЁ][. ]*)"
-PATTERN_TWO_TEACHERS = r"(.*)\s([А-ЯЁ][а-яё]+(-[А-ЯЁ][а-яё]+)?\s+[А-ЯЁ][. ]*[А-ЯЁ][. ]*)\s+([А-ЯЁ][а-яё]+(-[А-ЯЁ][а-яё]+)?\s+[А-ЯЁ][. ]*[А-ЯЁ][. ]*)"
+PATTERN_ONE_TEACHER = r"(.*)\s([А-ЯЁ][а-яё]+(-[А-ЯЁ][а-яё]+)?\s+[А-ЯЁ][.]*[А-ЯЁ][.]*)"
+PATTERN_TWO_TEACHERS = r"(.*)\s([А-ЯЁ][а-яё]+(-[А-ЯЁ][а-яё]+)?\s+[А-ЯЁ][.]*[А-ЯЁ][.]*)\s*([А-ЯЁ][а-яё]+(-[А-ЯЁ][а-яё]+)?\s+[А-ЯЁ][.]*[А-ЯЁ][.]*)"
 
 
 
@@ -53,12 +53,21 @@ def get_closest_match(word: str, words: list, cutoff=0.6) -> str:
     Аргументы:
         word (str): подходящее слово.
         words (list): список слов для сравнения.
+        cuttof (float): точность определения.
 
     Возвращается:
         str: Наиболее близкое совпадение со словом из списка.
     """
-    matches = difflib.get_close_matches(word, words, cutoff=cutoff)
-    return matches[0] if matches else None
+    lower_word = word.lower()
+    lower_words = [w.lower() for w in words]
+    
+    matches = difflib.get_close_matches(lower_word, lower_words, cutoff=cutoff)
+    if matches:
+        index = lower_words.index(matches[0])
+        return words[index]
+    
+    return None
+
 
 
 def get_subject_teacher(string: str) -> list:
@@ -178,9 +187,9 @@ def create_schedule_by_criteria(schedule, criterion) -> dict:
                     return None
                 
     schedule_new = {}
-    
+
     for key in schedule_by_criteria:
-        closest_key = get_closest_match(key, list(schedule_new.keys()))
+        closest_key = get_closest_match(key, list(schedule_by_criteria.keys()))
         if closest_key and difflib.SequenceMatcher(None, key, closest_key).ratio() > 0.95 and len(key) != len(closest_key):
             schedule_new[closest_key].extend(schedule_by_criteria[key])
         else:
