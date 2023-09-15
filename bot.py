@@ -5,7 +5,7 @@ from loguru import logger
 from client import client
 
 
-__version__ = '0.0.7'
+__version__ = '0.7.1'
 __all__ = ['client', '__version__']
 
 def main():
