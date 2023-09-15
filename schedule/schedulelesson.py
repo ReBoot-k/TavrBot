@@ -6,12 +6,12 @@ import datetime
 from config import FILENAME_ALL, FILENAME_CORRECTION
 
 
-__version__ = "0.1.2"
+__version__ = "0.1.3r"
 
 FILENAME_DATA = "data.pickle"
 
 PATTERN_GROUP = "^[0-9][А-Я]{1,3}[0-9]+$"
-PATTERN_ONE_TEACHER = r"(.*)\s([А-ЯЁ][а-яё]+(-[А-ЯЁ][а-яё]+)?\s+[А-ЯЁ][.]*[А-ЯЁ][.]*)"
+PATTERN_ONE_TEACHER = r"(.*)\s([А-ЯЁ][а-яё]+(-[А-ЯЁ][а-яё]+)?\s*[А-ЯЁ]*[.]*[А-ЯЁ]*[.]*)"
 PATTERN_TWO_TEACHERS = r"(.*)\s([А-ЯЁ][а-яё]+(-[А-ЯЁ][а-яё]+)?\s+[А-ЯЁ][.]*[А-ЯЁ][.]*)\s*([А-ЯЁ][а-яё]+(-[А-ЯЁ][а-яё]+)?\s+[А-ЯЁ][.]*[А-ЯЁ][.]*)"
 
 
@@ -93,7 +93,6 @@ def get_subject_teacher(string: str) -> list:
         teacher = match.group(2)
         return subject, [teacher]
 
-
     return None
 
 
@@ -130,7 +129,6 @@ def get_schedule(wb, week_is_even) -> dict:
                     subject_teacher = sheet.cell(row=row_num + week, column=col_num).value 
                     classroom = sheet.cell(row=row_num + week, column=col_num+1).value
 
-        
                     if subject_teacher:
                         subject_teacher = get_subject_teacher(subject_teacher)
                         classroom = [classroom] if len(subject_teacher[1]) == 1 else [classroom, sheet.cell(row=row_num+1, column=col_num+1).value] 
@@ -139,7 +137,9 @@ def get_schedule(wb, week_is_even) -> dict:
                         schedule[group].append({"subject": subject_teacher[0], "teachers": subject_teacher[1], "classrooms": classroom}) 
                     else:
                         schedule[group].append({"subject": "Окно", "teachers": "", "classrooms": "диванчик"})
+                    
                     schedule[group] = schedule[group][:6]
+
     
     return schedule
 
@@ -190,7 +190,7 @@ def create_schedule_by_criteria(schedule, criterion) -> dict:
 
     for key in schedule_by_criteria:
         closest_key = get_closest_match(key, list(schedule_by_criteria.keys()))
-        if closest_key and difflib.SequenceMatcher(None, key, closest_key).ratio() > 0.95 and len(key) != len(closest_key):
+        if closest_key and difflib.SequenceMatcher(None, key, closest_key).ratio() > 0.8 and len(key) != len(closest_key):
             schedule_new[closest_key].extend(schedule_by_criteria[key])
         else:
             schedule_new[key] = schedule_by_criteria[key]
@@ -268,7 +268,7 @@ def set_schedule(date=None, week_is_even=None) -> None:
             WORKBOOK2 = openpyxl.load_workbook(file)
         if week_is_even is None:
             week_is_even = is_even_week(date)
-
+  
         schedule = get_schedule(WORKBOOK1, week_is_even)
         schedule.update(get_schedule(WORKBOOK2, week_is_even))
     except Exception:
@@ -293,7 +293,7 @@ def get_result(string) -> str:
 
     for key, value in match.items():
         if value:
-            result += f"Расписание для \"{value}\":\n"
+            result += f"Расписание для \"{value}\" ------------------:\n"
             result += convert_schedule_by_criteria_to_string(value, create_schedule_by_criteria(schedule, key), key)
             break
     
