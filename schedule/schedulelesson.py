@@ -6,7 +6,7 @@ import datetime
 from config import FILENAME_ALL, FILENAME_CORRECTION
 
 
-__version__ = "0.1.2"
+__version__ = "0.1.3r"
 
 FILENAME_DATA = "data.pickle"
 
