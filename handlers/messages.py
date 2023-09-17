@@ -2,7 +2,7 @@ import re
 import os
 import shutil
 from pathlib import Path
-from utils import check_subscription, download_file, check_is_admin
+from utils import *
 from client import client
 from vkbottle.bot import Message, Bot, rules
 from vkbottle import Keyboard, Text, GroupEventType, GroupTypes
@@ -12,10 +12,10 @@ import json
 
 client.labeler.vbml_ignore_case = True
 
-
 @client.on.message(text="/even <arg>")
-@check_is_admin
-async def even(message: Message, arg: str) -> None:
+async def even(message: Message, arg) -> None:
+    if not await check_is_admin(message):
+        return
     arg = arg.casefold()
     if arg in ["1", "true", "t"]:
         week = True
@@ -29,15 +29,16 @@ async def even(message: Message, arg: str) -> None:
 
 
 @client.on.message(text="/s <arg>")
-@check_subscription
-async def schedule(message: Message, arg=None) -> None:
-
+async def schedule(message: Message, arg) -> None:
+    if not await check_subscription(message):
+        return
     with open(config.FILENAME_SAVE, "r") as file:
         json_data = file.read()
         settings = json.loads(json_data)
         
     if str(message.peer_id) not in settings or settings[str(message.peer_id)]["manual_send"]:
             await message.answer(schedulelesson.get_result(arg))
+
 
 COMPILE = re.compile(r"(?i)((?P<date>\d{1,2}.\d{1,2})|(?P<type_week>числитель|знаменатель)|(понедельник|вторник|сред[ауы]|четверг|пятниц[аы]|замен[ыа]|расписани[ея]))+")
 @client.on.message( regex=COMPILE)

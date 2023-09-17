@@ -1,4 +1,4 @@
-from utils import check_is_admin_chat
+from utils import *
 from client import client
 from vkbottle.bot import Message, rules
 from schedule import schedulelesson
@@ -44,6 +44,8 @@ def get_settings(peer_id: str):
 
 @client.on.chat_message(text=["/help", "/start", "начать"])
 async def help(message: Message) -> None:
+    if not await check_subscription(message):
+        return
     await message.answer(
         "Команды:\n\nНастройка - устанавливает настройки для этой беседы. Синтаксис:\n"
         "/settings <автоматически отправлять расписание (да или нет)> "
@@ -54,8 +56,10 @@ async def help(message: Message) -> None:
 
 
 @client.on.chat_message(text=["/settings <auto_send> <manual_send> <group>", "/settings"])
-@check_is_admin_chat
 async def settings(message: Message, auto_send = "", manual_send = "", group = "") -> None:
+    if not await check_is_admin_chat(message):
+        return
+    
     peer = str(message.peer_id)
     auto_send = auto_send.casefold()
     manual_send = manual_send.casefold()
