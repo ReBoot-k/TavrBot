@@ -26,8 +26,6 @@ async def start(message: Message) -> None:
         keyboard=keyboard
     )
 
-
-@check_is_admin
 @client.on.message(text="/even <arg>")
 async def even(message: Message, arg: str) -> None:
     arg = arg.casefold()
@@ -45,11 +43,12 @@ async def even(message: Message, arg: str) -> None:
 @client.on.message(payload={"command": "schedule"})
 @client.on.message(text=["/s", "/s <arg>"])
 async def schedule(message: Message, arg=None) -> None:
+
     with open(config.FILENAME_SAVE, "r") as file:
         json_data = file.read()
         settings = json.loads(json_data)
         
-    if message.peer_id not in settings or settings[str(message.peer_id)]["manual_send"]:
+    if str(message.peer_id) not in settings or settings[str(message.peer_id)]["manual_send"]:
         if not arg:
             await message.answer("Напишите мне группу или преподавателя")
             @client.on.message()

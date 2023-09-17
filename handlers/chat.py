@@ -1,4 +1,4 @@
-from utils import *
+from utils import check_is_admin_chat
 from client import client
 from vkbottle.bot import Message, rules
 from schedule import schedulelesson
