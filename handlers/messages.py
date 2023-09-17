@@ -13,20 +13,8 @@ import json
 client.labeler.vbml_ignore_case = True
 
 
-@client.on.private_message(text=["/start", "начать"])
-@client.on.chat_message(text="/kb")
-async def start(message: Message) -> None:
-    keyboard = (
-        Keyboard(one_time=False, inline=False)
-        .add(Text("Расписание", payload={"command": "schedule"}))
-    ).get_json()
-
-    await message.answer(
-        message="Привет, я бот Таврички. Выберите функцию",
-        keyboard=keyboard
-    )
-
 @client.on.message(text="/even <arg>")
+@check_is_admin
 async def even(message: Message, arg: str) -> None:
     arg = arg.casefold()
     if arg in ["1", "true", "t"]:
@@ -40,7 +28,6 @@ async def even(message: Message, arg: str) -> None:
     await message.answer(f"Четность недели изменена на \"{'числитель' if week else 'знаменатель'}\"")
 
 
-@client.on.message(payload={"command": "schedule"})
 @client.on.message(text="/s <arg>")
 @check_subscription
 async def schedule(message: Message, arg=None) -> None:

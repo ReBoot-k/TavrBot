@@ -42,7 +42,7 @@ def get_settings(peer_id: str):
     return f"Автоматическое отправление расписания - {auto_send}\nРучной вызов расписания - {manual_send}\nГруппа - {group}"
 
 
-@client.on.chat_message(text=["/help"])
+@client.on.chat_message(text=["/help", "/start", "начать"])
 async def help(message: Message) -> None:
     await message.answer(
         "Команды:\n\nНастройка - устанавливает настройки для этой беседы. Синтаксис:\n"
@@ -53,8 +53,8 @@ async def help(message: Message) -> None:
     )
 
 
-@check_is_admin_chat
 @client.on.chat_message(text=["/settings <auto_send> <manual_send> <group>", "/settings"])
+@check_is_admin_chat
 async def settings(message: Message, auto_send = "", manual_send = "", group = "") -> None:
     peer = str(message.peer_id)
     auto_send = auto_send.casefold()
