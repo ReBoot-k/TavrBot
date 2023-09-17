@@ -29,7 +29,8 @@ def get_settings(peer_id: str):
     with open(config.FILENAME_SAVE, "r") as file:
         json_data = file.read()
         settings = json.loads(json_data)
-    
+    if peer_id not in settings:
+        return "Настроек для этой беседы нет"
     auto_send = settings[peer_id]["auto_send"]
     manual_send = settings[peer_id]["manual_send"]
     group = settings[peer_id]["group"]
