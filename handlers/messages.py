@@ -39,9 +39,10 @@ async def even(message: Message, arg: str) -> None:
     schedulelesson.set_schedule(week_is_even=week)
     await message.answer(f"Четность недели изменена на \"{'числитель' if week else 'знаменатель'}\"")
 
-@check_subscription
+
 @client.on.message(payload={"command": "schedule"})
-@client.on.message(text=["/s", "/s <arg>"])
+@client.on.message(text="/s <arg>")
+@check_subscription
 async def schedule(message: Message, arg=None) -> None:
 
     with open(config.FILENAME_SAVE, "r") as file:
@@ -49,13 +50,6 @@ async def schedule(message: Message, arg=None) -> None:
         settings = json.loads(json_data)
         
     if str(message.peer_id) not in settings or settings[str(message.peer_id)]["manual_send"]:
-        if not arg:
-            await message.answer("Напишите мне группу или преподавателя")
-            @client.on.message()
-            async def get_word(message: Message) -> None:
-                word = message.text
-                await message.answer(schedulelesson.get_result(word))
-        else:
             await message.answer(schedulelesson.get_result(arg))
 
 COMPILE = re.compile(r"(?i)((?P<date>\d{1,2}.\d{1,2})|(?P<type_week>числитель|знаменатель)|(понедельник|вторник|сред[ауы]|четверг|пятниц[аы]|замен[ыа]|расписани[ея]))+")
