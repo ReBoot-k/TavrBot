@@ -50,9 +50,8 @@ async def schedule(message: Message, arg=None) -> None:
         settings = json.loads(json_data)
         
     if message.peer_id not in settings or settings[str(message.peer_id)]["manual_send"]:
-        await message.answer("Напишите мне группу или преподавателя")
-
         if not arg:
+            await message.answer("Напишите мне группу или преподавателя")
             @client.on.message()
             async def get_word(message: Message) -> None:
                 word = message.text
