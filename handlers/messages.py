@@ -43,8 +43,8 @@ async def even(message: Message, arg: str) -> None:
 
 @check_subscription
 @client.on.message(payload={"command": "schedule"})
-@client.on.message(text="/s")
-async def schedule(message: Message) -> None:
+@client.on.message(text=["/s", "/s <arg>"])
+async def schedule(message: Message, arg=None) -> None:
     with open(config.FILENAME_SAVE, "r") as file:
         json_data = file.read()
         settings = json.loads(json_data)
@@ -52,10 +52,13 @@ async def schedule(message: Message) -> None:
     if message.peer_id not in settings or settings[str(message.peer_id)]["manual_send"]:
         await message.answer("Напишите мне группу или преподавателя")
 
-        @client.on.message()
-        async def get_word(message: Message) -> None:
-            word = message.text
-            await message.answer(schedulelesson.get_result(word))
+        if not arg:
+            @client.on.message()
+            async def get_word(message: Message) -> None:
+                word = message.text
+                await message.answer(schedulelesson.get_result(word))
+        else:
+            await message.answer(schedulelesson.get_result(arg))
 
 COMPILE = re.compile(r"(?i)((?P<date>\d{1,2}.\d{1,2})|(?P<type_week>числитель|знаменатель)|(понедельник|вторник|сред[ауы]|четверг|пятниц[аы]|замен[ыа]|расписани[ея]))+")
 @client.on.message( regex=COMPILE)
@@ -104,4 +107,7 @@ async def getfile(message: Message) -> None:
         
         for key in settings:
             if settings[key]["auto_send"]:
-                await client.api.messages.send(peer_id=key, message=schedulelesson.get_result(settings[key]["group"]), random_id=0)
+                try:
+                    await client.api.messages.send(peer_id=key, message=schedulelesson.get_result(settings[key]["group"]), random_id=0)
+                except Exception:
+                    pass
