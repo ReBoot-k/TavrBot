@@ -6,9 +6,7 @@ import datetime
 from config import FILENAME_ALL, FILENAME_CORRECTION
 
 
-__version__ = "0.1.4"
-
-FILENAME_DATA = "data.pickle"
+__version__ = "0.1.5"
 
 PATTERN_GROUP = "^[0-9][А-Я]{1,3}[0-9]+$"
 PATTERN_ONE_TEACHER = r"(.*)\s([А-ЯЁ][а-яё]+(-[А-ЯЁ][а-яё]+)?\s*[А-ЯЁ]*[.]*[А-ЯЁ]*[.]*)"
@@ -95,6 +93,7 @@ def get_subject_teacher(string: str) -> list:
 
     return None
 
+day = ""
 
 def get_schedule(wb, week_is_even) -> dict:
     """
@@ -107,10 +106,13 @@ def get_schedule(wb, week_is_even) -> dict:
     Возвращается:
         dict: Словарь названий групп в качестве ключей и списков уроков в качестве значений.
     """
+    global day
     schedule = {}
     for sheetname in wb.sheetnames:
         sheet = wb[sheetname]
         for row in sheet.rows:
+            for cell in filter(lambda x: isinstance(x.value, str) and x.value.casefold() in ("понедельник", "вторник", "среда", "четверг", "пятница"), row):
+                day = cell.value
             for cell in filter(lambda x: isinstance(x.value, str) and re.match(PATTERN_GROUP, x.value), row):
                 group = cell.value
 
@@ -126,14 +128,21 @@ def get_schedule(wb, week_is_even) -> dict:
 
                     week = (not merged_range) * (not week_is_even)
 
+                    
                     subject_teacher = sheet.cell(row=row_num + week, column=col_num).value 
-                    classroom = sheet.cell(row=row_num + week, column=col_num+1).value
+
+                    cell_coordinate = sheet.cell(row=row_num + week, column=col_num+1).coordinate
+                    is_merged = any(cell_coordinate in r for r in sheet.merged_cells.ranges)
+                    classroom = sheet.cell(row=row_num + week*(not is_merged), column=col_num+1).value  
 
                     if subject_teacher:
                         subject_teacher = get_subject_teacher(subject_teacher)
-                        classroom = [classroom] if len(subject_teacher[1]) == 1 else [classroom, sheet.cell(row=row_num+1, column=col_num+1).value] 
+                        classroom = [classroom] if len(subject_teacher[1]) == 1 else [classroom, sheet.cell(row=row_num + (not is_merged), column=col_num+1).value]       
+                        classroom = [i if i else "неизвестно" for i in classroom]
+
                         if len(classroom) > 1 and not all(classroom):
                             classroom = list(filter(lambda x: True if x else False, classroom))[0].split()
+                        
                         schedule[group].append({"subject": subject_teacher[0], "teachers": subject_teacher[1], "classrooms": classroom}) 
                     else:
                         schedule[group].append({"subject": "Окно", "teachers": "", "classrooms": "диванчик"})
@@ -150,7 +159,7 @@ def create_schedule_by_criteria(schedule, criterion) -> dict:
 
     Аргументы:
         schedule (dict): словарь названий групп в качестве ключей и списков уроков в качестве значений.
-        criterion (str): критерий, по которому группируются данные. Может быть "group", "teacher" или "subject".
+        criterion (str): критерий, по которому группируются данные. Может быть "group" или "teacher".
 
     Возвращается:
         dict: Словарь значений критериев в качестве ключей и списков уроков в качестве значений.
@@ -161,39 +170,32 @@ def create_schedule_by_criteria(schedule, criterion) -> dict:
             if lesson:
                 if criterion == "group":
                     key = group
-                    value = {"subject": lesson['subject'], "teachers": lesson['teachers'], "classrooms": lesson['classrooms']}
+                    value = {"subject": lesson["subject"], "teachers": lesson["teachers"], "classrooms": lesson["classrooms"]}
                     value["pair_num"] = pair_num
                     if key not in schedule_by_criteria:
                         schedule_by_criteria[key] = []
                     schedule_by_criteria[key].append(value)
                 elif criterion == "teacher":
 
-                    for index, teacher in enumerate(lesson['teachers']):
+                    for index, teacher in enumerate(lesson["teachers"]):
                         key = teacher
-                        classroom = lesson['classrooms'][index * (len(lesson['classrooms']) > 1)]
-                        value = {"group": group, "subject": lesson['subject'], "classrooms": classroom}
+                        classroom = lesson["classrooms"][index * (len(lesson["classrooms"]) > 1)]
+                        value = {"group": group, "subject": lesson["subject"], "classrooms": classroom}
                         value["pair_num"] = pair_num
                         if key not in schedule_by_criteria:
                             schedule_by_criteria[key] = []
                         schedule_by_criteria[key].append(value)
-                elif criterion == "subject":
-                    key = lesson['subject']
-                    value = {"group": group, "teachers": lesson['teachers'], "classrooms": lesson['classrooms']}
-                    value["pair_num"] = pair_num
-                    if key not in schedule_by_criteria:
-                        schedule_by_criteria[key] = []
-                    schedule_by_criteria[key].append(value)
                 else:
                     return None
                 
     schedule_new = {}
-
-    for key in schedule_by_criteria:
-        closest_key = get_closest_match(key, list(schedule_by_criteria.keys()))
-        if closest_key and difflib.SequenceMatcher(None, key, closest_key).ratio() > 0.8 and len(key) != len(closest_key):
-            schedule_new[closest_key].extend(schedule_by_criteria[key])
-        else:
-            schedule_new[key] = schedule_by_criteria[key]
+    for name, value in schedule_by_criteria.items():
+        if criterion == "teacher":
+            name = name.replace(" ", "")
+            name = name[:name.index(".") - 1] + " " + name[name.index(".") - 1:]
+            name += "." * (2 - name.count("."))
+        
+        schedule_new.setdefault(name, []).extend(value)
 
     return schedule_new
 
@@ -207,7 +209,7 @@ def convert_schedule_by_criteria_to_string(key, schedule, criterion) -> str:
     Аргументы:
         key (str): значение критерия, по которому будет отображаться расписание.
         schedule (dict): словарь значений критериев в качестве ключей и списков уроков в качестве значений.
-        criterion (str): критерий, по которому будет отображаться информация. Может быть "group", "teacher" или "subject"
+        criterion (str): критерий, по которому будет отображаться информация. Может быть "group" или "teacher"
 
     Возвращается:
         str: Строковое представление расписания для заданного значения критерия.
@@ -221,20 +223,14 @@ def convert_schedule_by_criteria_to_string(key, schedule, criterion) -> str:
     for pair_num, lesson in enumerate(lessons, start=1):
         if criterion == "group":
             string += f"{pair_num}. {lesson['subject']}\n"
-            for sub_index, (teacher, classroom) in enumerate(zip(lesson['teachers'], lesson['classrooms']), start=1):
-                string += f"{sub_index} подгруппа:\n" if len(lesson['teachers']) == 2 else ""
+            for sub_index, (teacher, classroom) in enumerate(zip(lesson["teachers"], lesson["classrooms"]), start=1):
+                string += f"{sub_index} подгруппа:\n" if len(lesson["teachers"]) == 2 else ""
                 string += f"Преподаватель: {teacher}\nАудитория: {classroom}\n"
         elif criterion == "teacher":
             pair_num = lesson["pair_num"]
             string += f"{pair_num}. {lesson['subject']}\n"
             string += f"Группа: {lesson['group']}\n"
             string += f"Аудитория: {lesson['classrooms']}\n"
-        elif criterion == "subject":
-            pair_num = lesson["pair_num"]
-            string += f"{pair_num}. {lesson['group']}\n"
-            for sub_index, (teacher, classroom) in enumerate(zip(lesson['teachers'], lesson['classrooms']), start=1):
-                string += f"{sub_index} подгруппа:\n" if len(lesson['teachers']) == 2 else ""
-                string += f"Преподаватель: {teacher}\nАудитория: {classroom}\n"
         else:
             return None
         
@@ -268,11 +264,24 @@ def set_schedule(date=None, week_is_even=None) -> None:
             WORKBOOK2 = openpyxl.load_workbook(file)
         if week_is_even is None:
             week_is_even = is_even_week(date)
-  
-        schedule = get_schedule(WORKBOOK1, week_is_even)
-        schedule.update(get_schedule(WORKBOOK2, week_is_even))
+        
+        schedule1 = get_schedule(WORKBOOK1, week_is_even)
+        schedule2 = get_schedule(WORKBOOK2, week_is_even)
     except Exception:
         return
+    
+    for key in schedule1:
+        if key in schedule2:
+            pairs = []
+            for value in schedule2[key]:
+                if value in schedule1[key]:
+                    pairs.append(value)
+                else:
+                    value["subject"] = "ЗАМЕНА: " + value["subject"]
+                    pairs.append(value)
+            schedule[key] = pairs
+
+   
 
 
 def get_result(string) -> str:
@@ -286,14 +295,14 @@ def get_result(string) -> str:
         str: Строковое представление расписания по наиболее подходящему критерию.
     """
     match = {}
-    result = ""
+    result = f"Расписание на {day.upper()}"
     
-    for key in ("group", "subject", "teacher"):
+    for key in ("group", "teacher"):
         match[key] = get_closest_match(string, list(create_schedule_by_criteria(schedule, key).keys()))
 
     for key, value in match.items():
         if value:
-            result += f"Расписание для \"{value}\" ------------------:\n"
+            result += f" для \"{value}\":\n"
             result += convert_schedule_by_criteria_to_string(value, create_schedule_by_criteria(schedule, key), key)
             break
     

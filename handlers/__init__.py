@@ -1,1 +1,1 @@
-from handlers import messages
+from handlers import messages, chat
